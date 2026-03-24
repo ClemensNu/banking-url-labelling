@@ -1,6 +1,6 @@
 # banking-url-labelling
 
-Generated look-alike and typo domain variants from real seed domains, open for public classification to build a labelled training dataset for banking phishing detection.
+Generated look-alike and typo domain variants from real seed domains, open for public classification to build a labelled training dataset for banking Information phishing Alert.
 
 ## Contents
 
