@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Banking Domain Labeller — NUST Research</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:      #0d1117;
+      --surface: #161b22;
+      --border:  #30363d;
+      --text:    #e6edf3;
+      --muted:   #8b949e;
+      --banking: #3fb950;
+      --not:     #f85149;
+      --accent:  #e3b341;
+      --radius:  6px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'IBM Plex Sans', sans-serif; min-height: 100vh; display: flex; flex-direction: column; }
+    header { border-bottom: 1px solid var(--border); padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+    .logo { display: flex; align-items: center; gap: 10px; }
+    .logo-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); animation: pulse 2.5s ease-in-out infinite; }
+    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1);}50%{opacity:0.5;transform:scale(0.85);} }
+    .logo-text { font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 600; letter-spacing: 0.08em; }
+    .logo-text span { color: var(--accent); }
+    .progress-pill { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 4px 12px; }
+    .progress-pill b { color: var(--accent); }
+    main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 24px; gap: 28px; }
+    .progress-bar-wrap { width: 100%; max-width: 660px; }
+    .progress-bar-label { display: flex; justify-content: space-between; font-size: 11px; font-family: 'IBM Plex Mono', monospace; color: var(--muted); margin-bottom: 6px; }
+    .progress-bar-track { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
+    .progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--banking), var(--accent)); border-radius: 2px; transition: width 0.6s ease; width: 0%; }
+    .card { width: 100%; max-width: 660px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .card-header { padding: 12px 20px; border-bottom: 1px solid var(--border); font-size: 11px; font-family: 'IBM Plex Mono', monospace; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; display: flex; align-items: center; gap: 8px; }
+    .card-header::before { content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+    .card-body { padding: 32px 28px; display: flex; flex-direction: column; align-items: center; gap: 24px; text-align: center; }
+    .url-wrap { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; display: flex; align-items: center; gap: 12px; }
+    .url-text { font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 600; color: var(--text); word-break: break-all; flex: 1; text-align: left; }
+    .visit-btn { flex-shrink: 0; display: inline-flex; align-items: center; gap: 5px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 600; color: var(--accent); background: transparent; border: 1px solid var(--accent); border-radius: var(--radius); padding: 7px 12px; cursor: pointer; text-decoration: none; transition: background 0.15s, color 0.15s; white-space: nowrap; }
+    .visit-btn:hover { background: var(--accent); color: var(--bg); }
+    .question { font-size: 17px; font-weight: 300; color: var(--muted); line-height: 1.5; }
+    .question strong { color: var(--text); font-weight: 600; }
+    .answer-row { display: flex; gap: 14px; width: 100%; }
+    .answer-btn { flex: 1; padding: 18px 10px; border-radius: var(--radius); border: 2px solid transparent; font-family: 'IBM Plex Sans', sans-serif; font-size: 15px; font-weight: 600; cursor: pointer; transition: transform 0.1s, box-shadow 0.15s, background 0.15s; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+    .answer-btn .icon { font-size: 22px; }
+    .answer-btn:active { transform: scale(0.97); }
+    .answer-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+    .btn-banking { background: rgba(63,185,80,0.1); border-color: var(--banking); color: var(--banking); }
+    .btn-banking:hover:not(:disabled) { background: rgba(63,185,80,0.22); box-shadow: 0 0 18px rgba(63,185,80,0.2); }
+    .btn-not { background: rgba(248,81,73,0.1); border-color: var(--not); color: var(--not); }
+    .btn-not:hover:not(:disabled) { background: rgba(248,81,73,0.2); box-shadow: 0 0 18px rgba(248,81,73,0.2); }
+    .feedback { font-family: 'IBM Plex Mono', monospace; font-size: 12px; padding: 10px 16px; border-radius: var(--radius); display: none; width: 100%; }
+    .feedback.success { display: block; background: rgba(63,185,80,0.1); border: 1px solid var(--banking); color: var(--banking); }
+    .feedback.error { display: block; background: rgba(248,81,73,0.08); border: 1px solid var(--not); color: var(--not); }
+    .skip-btn { background: none; border: none; color: var(--muted); font-family: 'IBM Plex Sans', sans-serif; font-size: 12px; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; transition: color 0.15s; }
+    .skip-btn:hover { color: var(--text); }
+    .loading { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 40px 0; color: var(--muted); font-size: 13px; }
+    .spinner { width: 26px; height: 26px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .done-state { display: none; flex-direction: column; align-items: center; gap: 12px; padding: 40px 20px; text-align: center; }
+    .done-state .icon { font-size: 38px; }
+    .done-state h2 { font-size: 20px; font-weight: 600; color: var(--banking); }
+    .done-state p { color: var(--muted); font-size: 14px; line-height: 1.6; max-width: 380px; }
+    .info-section { width: 100%; max-width: 660px; display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; }
+    .info-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+    .info-card-label { font-size: 10px; font-family: 'IBM Plex Mono', monospace; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 5px; }
+    .info-card-value { font-size: 13px; color: var(--text); line-height: 1.5; }
+    footer { border-top: 1px solid var(--border); padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+    .footer-text { font-size: 11px; color: var(--muted); }
+    .footer-text a { color: var(--accent); text-decoration: none; }
+    .session-label { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--border); }
+    @media (max-width: 500px) { .answer-row { flex-direction: column; } .url-text { font-size: 12px; } }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-dot"></div>
+    <span class="logo-text">BANKING<span>.</span>LABEL</span>
+  </div>
+  <div class="progress-pill"><b id="stat-labelled">–</b> / <span id="stat-total">–</span> labelled</div>
+</header>
+
+<main>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar-label">
+      <span>Overall progress</span>
+      <span id="stat-percent">0%</span>
+    </div>
+    <div class="progress-bar-track">
+      <div class="progress-bar-fill" id="progress-fill"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">Classify this domain</div>
+    <div class="card-body">
+
+      <div class="loading" id="loading-state">
+        <div class="spinner"></div>
+        <span>Loading next domain...</span>
+      </div>
+
+      <div id="task-state" style="display:none; width:100%; flex-direction:column; align-items:center; gap:22px;">
+        <div class="url-wrap">
+          <span class="url-text" id="url-display">—</span>
+          <a id="visit-link" href="#" target="_blank" rel="noopener noreferrer" class="visit-btn">Visit ↗</a>
+        </div>
+        <p class="question">Is this domain a <strong>banking institution</strong>?</p>
+        <div class="answer-row">
+          <button class="answer-btn btn-banking" id="btn-banking" onclick="submitLabel('banking')">
+            <span class="icon">🏦</span>Yes — Banking
+          </button>
+          <button class="answer-btn btn-not" id="btn-not" onclick="submitLabel('not_banking')">
+            <span class="icon">✗</span>No — Not Banking
+          </button>
+        </div>
+        <div class="feedback" id="feedback"></div>
+        <button class="skip-btn" onclick="loadNextUrl()">Skip this domain</button>
+      </div>
+
+      <div class="done-state" id="done-state">
+        <span class="icon">✓</span>
+        <h2>All domains classified</h2>
+        <p>Every domain has received enough labels. Thank you for contributing to this research.</p>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="info-section">
+    <div class="info-card">
+      <div class="info-card-label">What is this?</div>
+      <div class="info-card-value">A NUST research project collecting labels on domain variants to study banking impersonation.</div>
+    </div>
+    <div class="info-card">
+      <div class="info-card-label">What do I do?</div>
+      <div class="info-card-value">Visit the domain, then answer: is it a banking institution or not?</div>
+    </div>
+    <div class="info-card">
+      <div class="info-card-label">Banking includes</div>
+      <div class="info-card-value">Banks, credit unions, mobile money services, microfinance institutions.</div>
+    </div>
+    <div class="info-card">
+      <div class="info-card-label">Not banking includes</div>
+      <div class="info-card-value">Retail, news, social media, government (non-financial), or anything else.</div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <span class="footer-text">NUST Research &mdash; <a href="https://github.com/ClemensNu/banking-url-labelling" target="_blank">View on GitHub</a></span>
+  <span class="session-label" id="session-display"></span>
+</footer>
+
+<script>
+  // ── REPLACE THESE TWO VALUES ──────────────────────────────
+  var SUPABASE_URL  = "https://vgvdfiajtxfxetuehiom.supabase.co";
+  var SUPABASE_KEY  = "sb_publishable_X92huiqZZAOdWc45dsWC2w_b_ymw852";
+  var LABELS_NEEDED = 3;
+
+  var SESSION_ID = (function() {
+    var key = "nust_session";
+    var id  = localStorage.getItem(key);
+    if (!id) { id = "s_" + Math.random().toString(36).substr(2,10) + "_" + Date.now(); localStorage.setItem(key, id); }
+    return id;
+  })();
+
+  var currentUrl = null;
+  var currentId  = null;
+
+  document.getElementById("session-display").textContent = "session: " + SESSION_ID;
+  loadNextUrl();
+  loadStats();
+
+  function loadNextUrl() {
+    setUiState("loading");
+    showFeedback("","");
+    fetch(SUPABASE_URL + "/rest/v1/urls?label_count=lt." + LABELS_NEEDED + "&limit=20&order=id", {
+      headers: { "apikey": SUPABASE_KEY, "Authorization": "Bearer " + SUPABASE_KEY }
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if (!data || data.length === 0) { setUiState("done"); return; }
+      var pick = data[Math.floor(Math.random() * data.length)];
+      currentId  = pick.id;
+      currentUrl = pick.url;
+      document.getElementById("url-display").textContent = pick.url;
+      document.getElementById("visit-link").href = ensureProtocol(pick.url);
+      setUiState("task");
+      enableButtons(true);
+    })
+    .catch(function(err){ showFeedback("Could not load domain. Check your connection.","error"); setUiState("task"); console.error(err); });
+  }
+
+  function submitLabel(label) {
+    if (!currentId || !currentUrl) return;
+    enableButtons(false);
+    fetch(SUPABASE_URL + "/rest/v1/labels", {
+      method: "POST",
+      headers: { "apikey": SUPABASE_KEY, "Authorization": "Bearer " + SUPABASE_KEY, "Content-Type": "application/json", "Prefer": "return=minimal" },
+      body: JSON.stringify({ session_id: SESSION_ID, url_id: currentId, url: currentUrl, label: label })
+    })
+    .then(function(){
+      return fetch(SUPABASE_URL + "/rest/v1/rpc/increment_label_count", {
+        method: "POST",
+        headers: { "apikey": SUPABASE_KEY, "Authorization": "Bearer " + SUPABASE_KEY, "Content-Type": "application/json" },
+        body: JSON.stringify({ target_url_id: currentId })
+      });
+    })
+    .then(function(){
+      showFeedback(label === "banking" ? "Saved: Banking. Loading next..." : "Saved: Not Banking. Loading next...", "success");
+      loadStats();
+      setTimeout(loadNextUrl, 800);
+    })
+    .catch(function(err){ showFeedback("Save failed. Please try again.","error"); enableButtons(true); console.error(err); });
+  }
+
+  function loadStats() {
+    fetch(SUPABASE_URL + "/rest/v1/urls?select=id&limit=1", {
+      headers: { "apikey": SUPABASE_KEY, "Authorization": "Bearer " + SUPABASE_KEY, "Prefer": "count=exact", "Range": "0-0" }
+    })
+    .then(function(r){
+      var total = parseInt(r.headers.get("content-range").split("/")[1]) || 0;
+      document.getElementById("stat-total").textContent = total.toLocaleString();
+      return fetch(SUPABASE_URL + "/rest/v1/urls?label_count=gte." + LABELS_NEEDED + "&select=id&limit=1", {
+        headers: { "apikey": SUPABASE_KEY, "Authorization": "Bearer " + SUPABASE_KEY, "Prefer": "count=exact", "Range": "0-0" }
+      }).then(function(r2){
+        var labelled = parseInt(r2.headers.get("content-range").split("/")[1]) || 0;
+        var percent  = total > 0 ? Math.round((labelled/total)*100) : 0;
+        document.getElementById("stat-labelled").textContent = labelled.toLocaleString();
+        document.getElementById("stat-percent").textContent  = percent + "%";
+        document.getElementById("progress-fill").style.width = percent + "%";
+      });
+    })
+    .catch(function(){});
+  }
+
+  function setUiState(state) {
+    document.getElementById("loading-state").style.display = state === "loading" ? "flex" : "none";
+    document.getElementById("task-state").style.display    = state === "task"    ? "flex" : "none";
+    document.getElementById("done-state").style.display    = state === "done"    ? "flex" : "none";
+  }
+
+  function enableButtons(on) {
+    document.getElementById("btn-banking").disabled = !on;
+    document.getElementById("btn-not").disabled     = !on;
+  }
+
+  function showFeedback(msg, type) {
+    var el = document.getElementById("feedback");
+    el.textContent = msg;
+    el.className   = "feedback" + (type ? " " + type : "");
+  }
+
+  function ensureProtocol(url) {
+    return (url.startsWith("http://") || url.startsWith("https://")) ? url : "https://" + url;
+  }
+</script>
+</body>
+</html>
