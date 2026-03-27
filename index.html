@@ -193,7 +193,11 @@
     .then(function(data){
       if (!data || data.length === 0) { setUiState("done"); return; }
       var unseen = data.filter(function(row) { return !seenIds.has(row.id); });
-      if (unseen.length === 0) { loadNextUrl(); return; }
+      if (unseen.length === 0) {
+        // All URLs in this batch already seen — reset and start fresh
+        seenIds.clear();
+        unseen = data;
+      }
       var pick = unseen[Math.floor(Math.random() * unseen.length)];
       seenIds.add(pick.id);
       currentId  = pick.id;
@@ -231,8 +235,12 @@
         method: "POST",
         headers: { "apikey": SUPABASE_KEY, "Authorization": "Bearer " + SUPABASE_KEY, "Content-Type": "application/json" },
         body: JSON.stringify({ target_url_id: currentId })
-      }).then(function(){
-        showFeedback(label === "banking" ? "Saved: Banking. Loading next..." : label === "unreachable" ? "Saved: Unreachable. Loading next..." : "Saved: Not Banking. Loading next...", "success");
+      }).then(function(rpc){
+        if (!rpc.ok) console.warn("increment_label_count failed for id", currentId);
+        var msg = label === "banking" ? "Saved: Banking. Loading next..."
+                : label === "unreachable" ? "Saved: Unreachable. Loading next..."
+                : "Saved: Not Banking. Loading next...";
+        showFeedback(msg, "success");
         loadStats();
         setTimeout(loadNextUrl, 800);
       });
@@ -245,16 +253,22 @@
   }
 
   function loadStats() {
+    function parseCount(r) {
+      var header = r.headers.get("content-range");
+      if (!header) return 0;
+      var parts = header.split("/");
+      return parseInt(parts[1]) || 0;
+    }
     fetch(SUPABASE_URL + "/rest/v1/urls?select=id&limit=1", {
       headers: { "apikey": SUPABASE_KEY, "Authorization": "Bearer " + SUPABASE_KEY, "Prefer": "count=exact", "Range": "0-0" }
     })
     .then(function(r){
-      var total = parseInt(r.headers.get("content-range").split("/")[1]) || 0;
+      var total = parseCount(r);
       document.getElementById("stat-total").textContent = total.toLocaleString();
       return fetch(SUPABASE_URL + "/rest/v1/urls?label_count=gte." + LABELS_NEEDED + "&select=id&limit=1", {
         headers: { "apikey": SUPABASE_KEY, "Authorization": "Bearer " + SUPABASE_KEY, "Prefer": "count=exact", "Range": "0-0" }
       }).then(function(r2){
-        var labelled = parseInt(r2.headers.get("content-range").split("/")[1]) || 0;
+        var labelled = parseCount(r2);
         var percent  = total > 0 ? Math.round((labelled/total)*100) : 0;
         document.getElementById("stat-labelled").textContent = labelled.toLocaleString();
         document.getElementById("stat-percent").textContent  = percent + "%";
