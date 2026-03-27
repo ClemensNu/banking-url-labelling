@@ -222,7 +222,14 @@
       loadStats();
       setTimeout(loadNextUrl, 800);
     })
-    .catch(function(err){ showFeedback("Save failed. Please try again.","error"); enableButtons(true); console.error(err); });
+    .catch(function(err){
+      var msg = err.message && err.message.includes("unique")
+        ? "You have already labelled this domain. Loading next..."
+        : "Save failed. Please try again.";
+      showFeedback(msg, "error");
+      setTimeout(loadNextUrl, 1200);
+      console.error(err);
+    });
   }
 
   function loadStats() {
