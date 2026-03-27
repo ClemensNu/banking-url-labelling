@@ -125,7 +125,7 @@
           </button>
         </div>
         <div class="feedback" id="feedback"></div>
-        <button class="skip-btn" onclick="loadNextUrl()">Skip this domain</button>
+        <button class="skip-btn" id="btn-skip" onclick="loadNextUrl()">Skip this domain</button>
       </div>
 
       <div class="done-state" id="done-state">
@@ -175,9 +175,10 @@
     return id;
   })();
 
-  var currentUrl  = null;
-  var currentId   = null;
-  var seenIds     = new Set();
+  var currentUrl     = null;
+  var currentId      = null;
+  var seenIds        = new Set();
+  var sessionOffset  = Math.floor(Math.random() * 600000); // spread users across dataset
 
   document.getElementById("session-display").textContent = "session: " + SESSION_ID;
   loadNextUrl();
@@ -186,12 +187,16 @@
   function loadNextUrl() {
     setUiState("loading");
     showFeedback("","");
-    fetch(SUPABASE_URL + "/rest/v1/urls?label_count=lt." + LABELS_NEEDED + "&limit=50&order=id", {
+    fetch(SUPABASE_URL + "/rest/v1/urls?label_count=lt." + LABELS_NEEDED + "&limit=50&order=id&offset=" + sessionOffset, {
       headers: { "apikey": SUPABASE_KEY, "Authorization": "Bearer " + SUPABASE_KEY }
     })
     .then(function(r){ return r.json(); })
     .then(function(data){
-      if (!data || data.length === 0) { setUiState("done"); return; }
+      // If offset is past end of unlabelled set, wrap around to start
+      if (!data || data.length === 0) {
+        if (sessionOffset > 0) { sessionOffset = 0; loadNextUrl(); return; }
+        setUiState("done"); return;
+      }
       var unseen = data.filter(function(row) { return !seenIds.has(row.id); });
       if (unseen.length === 0) {
         // All URLs in this batch already seen — reset and start fresh
@@ -207,16 +212,20 @@
       setUiState("task");
       enableButtons(true);
     })
-    .catch(function(err){ showFeedback("Could not load domain. Check your connection.","error"); setUiState("task"); console.error(err); });
+    .catch(function(err){ showFeedback("Could not load domain. Check your connection.","error"); setUiState("task"); enableButtons(true); enableSkip(true); console.error(err); });
   }
 
   function submitLabel(label) {
     if (!currentId || !currentUrl) return;
+    // Snapshot to prevent currentId/currentUrl changing mid-flight if Skip is clicked
+    var snapId  = currentId;
+    var snapUrl = currentUrl;
     enableButtons(false);
+    enableSkip(false);
     fetch(SUPABASE_URL + "/rest/v1/labels", {
       method: "POST",
       headers: { "apikey": SUPABASE_KEY, "Authorization": "Bearer " + SUPABASE_KEY, "Content-Type": "application/json", "Prefer": "return=minimal" },
-      body: JSON.stringify({ session_id: SESSION_ID, url_id: currentId, url: currentUrl, label: label })
+      body: JSON.stringify({ session_id: SESSION_ID, url_id: snapId, url: snapUrl, label: label })
     })
     .then(function(res){
       if (!res.ok) {
@@ -228,26 +237,29 @@
           } else {
             showFeedback("Save failed (" + res.status + "). Please try again.", "error");
             enableButtons(true);
+            enableSkip(true);
           }
         });
       }
       return fetch(SUPABASE_URL + "/rest/v1/rpc/increment_label_count", {
         method: "POST",
         headers: { "apikey": SUPABASE_KEY, "Authorization": "Bearer " + SUPABASE_KEY, "Content-Type": "application/json" },
-        body: JSON.stringify({ target_url_id: currentId })
+        body: JSON.stringify({ target_url_id: snapId })
       }).then(function(rpc){
-        if (!rpc.ok) console.warn("increment_label_count failed for id", currentId);
+        if (!rpc.ok) console.warn("increment_label_count failed for id", snapId);
         var msg = label === "banking" ? "Saved: Banking. Loading next..."
                 : label === "unreachable" ? "Saved: Unreachable. Loading next..."
                 : "Saved: Not Banking. Loading next...";
         showFeedback(msg, "success");
         loadStats();
+        enableSkip(true);
         setTimeout(loadNextUrl, 800);
       });
     })
     .catch(function(err){
       showFeedback("Network error. Please try again.", "error");
       enableButtons(true);
+      enableSkip(true);
       console.error(err);
     });
   }
@@ -288,6 +300,10 @@
     document.getElementById("btn-banking").disabled     = !on;
     document.getElementById("btn-not").disabled         = !on;
     document.getElementById("btn-unreachable").disabled = !on;
+  }
+
+  function enableSkip(on) {
+    document.getElementById("btn-skip").disabled = !on;
   }
 
   function showFeedback(msg, type) {
